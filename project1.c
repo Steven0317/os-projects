@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
+#include <string.h>
 
 typedef struct
 {
@@ -47,7 +48,6 @@ int main(void)
 
 	int shmid;
 	pid_t pid;
-	int status;
 
 	shmid = shmget(IPC_PRIVATE,sizeof(int),IPC_CREAT | 0666);
 	if (shmid < 0 )
@@ -68,7 +68,7 @@ int main(void)
 	pid = fork();
 	if(pid < 0)
 	{
-		printf("fork error 1\n");
+		printf("fork error 1: %s\n", strerror(errno));
 		exit(1);
 	}
 	else if (pid == 0)
@@ -81,7 +81,7 @@ int main(void)
 	pid = fork();
 	if(pid < 0)
 	{
-		printf("fork error 2\n");
+		printf("fork error 2: %s\n", strerror(errno));
 		exit(1);
 	}
 	else if(pid == 0)
@@ -94,7 +94,7 @@ int main(void)
 	pid = fork();
 	if(pid < 0)
 	{
-		printf("fork error 3\n");
+		printf("fork error 3: %s\n", strerror(errno));
 		exit(1);
 	}
 	else if( pid == 0)
@@ -107,7 +107,7 @@ int main(void)
 	pid = fork();
 	if(pid < 0)
 	{
-		printf("fork error 4\n");
+		printf("fork error 4: %s\n", strerror(errno));
 		exit(1);
 	}
 	else if(pid == 0)
