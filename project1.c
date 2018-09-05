@@ -7,7 +7,7 @@
 
 #include <stdio.h>
 #include <sys/types.h>
-#include <sys.ipc.h>
+#include <sys/ipc.h>
 #include <sys/shm.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -25,6 +25,7 @@ shared_memory *total;
 
 int main(void)
 {
+	printf("Hello World");
 	return 0;
 }
 
