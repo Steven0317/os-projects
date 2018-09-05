@@ -13,8 +13,10 @@
 #include <unistd.h>
 #include <errno.h>
 
-// key number
-#define SHMKEY ((key_t) 1497);
+void ChildProcess1(int *a);
+void ChildProcess2(int *a);
+void ChildProcess3(int *a);
+void ChildProcess4(int *a);
 
 typedef struct
 {
@@ -23,9 +25,14 @@ typedef struct
 
 shared_memory *total;
 
+
 int main(void)
 {
-	printf("Hello World");
+
+	int shmid;
+	pid_t pid;
+
+	
 	return 0;
 }
 
