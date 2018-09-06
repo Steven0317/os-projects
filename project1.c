@@ -43,7 +43,7 @@ void ChildProcess4(shared_memory *a)
 	printf("From Process 3: counter = %d\n", a->value);
 }
 
-int main(void)
+void main(void)
 {
 
 	int shmid;
@@ -63,7 +63,7 @@ int main(void)
 		exit(1);
 	}
 
-	total->value = 0;
+
 
 	pid = fork();
 	if(pid < 0)
@@ -116,7 +116,15 @@ int main(void)
 		exit(0);
 	}
 
-	
+	printf("Child with ID: %d exited\n", wait(NULL));
+	printf("Child with ID: %d exited\n", wait(NULL));
+	printf("Child with ID: %d exited\n", wait(NULL));
+	printf("Child with ID: %d exited\n", wait(NULL));
+
+	shmdt((void *) total->value);
+	shmctl(shmid,IPC_RMID,NULL);
+
+
 	exit(0);
 }
 
