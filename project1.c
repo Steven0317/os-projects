@@ -26,22 +26,22 @@ shared_memory *total;
 
 void ChildProcess1(shared_memory *a)
 {
-	a->value += rand() %(10000 + 1 - 0) + 0;
+	a->value += 100000;
 	printf("From Process 1: counter = %d\n", a->value);
 }
 void ChildProcess2(shared_memory *a)
 {
-	a->value += rand() % (20000 + 1 - 0) + 0;
+	a->value += 200000;
 	printf("From Process 2: counter = %d\n", a->value);
 }
 void ChildProcess3(shared_memory * a)
 {
-	a->value += (30000 + 1 - 0) + 0;
+	a->value += 300000;
 	printf("From Process 3: counter = %d\n", a->value);
 }
 void ChildProcess4(shared_memory *a)
 {
-	a->value += (50000 + 1 - 0) + 0;
+	a->value += 500000;
 	printf("From Process 4: counter = %d\n", a->value);
 }
 
@@ -127,10 +127,10 @@ int main(void)
 		exit(0);
 	}
 
-	printf("Child with ID: %d exited\n", waitpid(pid1,NULL,0));
-	printf("Child with ID: %d exited\n", waitpid(pid2,NULL,0));
-	printf("Child with ID: %d exited\n", waitpid(pid3,NULL,0));
 	printf("Child with ID: %d exited\n", waitpid(pid4,NULL,0));
+	printf("Child with ID: %d exited\n", waitpid(pid3,NULL,0));
+	printf("Child with ID: %d exited\n", waitpid(pid2,NULL,0));
+	printf("Child with ID: %d exited\n", waitpid(pid1,NULL,0));
 
 	shmdt((void *) total);
 	shmctl(shmid,IPC_RMID,NULL);
