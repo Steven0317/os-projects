@@ -10,6 +10,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+
+
 typedef int bufferItem;
 #define BUFFER_SIZE 5
 
@@ -55,7 +57,7 @@ char newChar;
 FILE *fp;
 fp = fopen("mytest.dat", "r");
 
-while (1 && fscanf(fp, "%c", &newChar) != EOF) {
+while (fscanf(fp, "%c", &newChar) != EOF) {
 
     // produce an item
     bufferItem currentChar = newChar;
@@ -92,7 +94,7 @@ while (1) {
 //-------------------------------------------
 // MAIN
 //-------------------------------------------
-main() {
+int main() {
 
 int r = 0;
 int i;
@@ -119,6 +121,8 @@ pthread_create(&tid2[0], &attr[0], &thread2, NULL);
 /* Wait for the threads to finish */
 pthread_join(tid1[0], NULL);
 pthread_join(tid2[0], NULL);
+
+pthread_exit(NULL);
 
 printf("------------------------------------------------\n");
 printf("\t\t End of simulation\n");
