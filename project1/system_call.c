@@ -5,22 +5,12 @@
 #include <time.h>
 
 #define billion 1E9
+#define iterations 500
 
 int main(int argc, char* argv[])
 {
-	char* file = "";
-	/* Check for command line file arguement
-	 * prompts for file if null
-	 */
-	if(argc > 1)
-	{
-		file = argv[1];
-	}
-	else
-	{
-		printf("Enter a file within the directory: ");
-		scanf("%s",file);
-	}
+	char* file = "test.txt";
+		
 	
 
 	//arbitrary data initalization
@@ -32,9 +22,9 @@ int main(int argc, char* argv[])
 
 	//array to store interval time
 	uint64_t diff;
-	long long unsigned duration[100];
+	long long unsigned duration[iterations];
 
-	for(i = 0; i < 100; ++i)
+	for(i = 0; i < iterations; ++i)
 	{
 		//open file call
 		
@@ -45,7 +35,7 @@ int main(int argc, char* argv[])
 
 		clock_gettime(CLOCK_MONOTONIC, &start);
 		//read file call
-		read(fileDescriptor,data,1);
+		read(fileDescriptor,data,0);
 		clock_gettime(CLOCK_MONOTONIC, &end);
 		
 		//calculate time difference in nanoseconds
@@ -61,12 +51,13 @@ int main(int argc, char* argv[])
 
 	uint64_t sum = 0;
 
-	for(i = 0; i < 100; ++i)
+	for(i = 0; i < iterations; ++i)
 	{
 		sum += duration[i];	
 	}
 
 	//prints out average duration of system call in nanoseconds
-	printf("%llu nanosecond average for system calls\n",(long long unsigned)sum/i);
+	printf("%llu nanosecond average for system calls\n",(long long unsigned)(sum)/iterations);
+	//printf("%llu", (long long unsigned)sum/iterations);
 	return 0;
 }
