@@ -5,7 +5,7 @@
 #include <time.h>
 
 #define billion 1E9
-#define iterations 500
+#define iterations 10000
 
 int main(int argc, char* argv[])
 {
@@ -23,6 +23,8 @@ int main(int argc, char* argv[])
 	//array to store interval time
 	uint64_t diff;
 	long long unsigned duration[iterations];
+
+	printf("taking the average of 10000 system calls\n");
 
 	for(i = 0; i < iterations; ++i)
 	{

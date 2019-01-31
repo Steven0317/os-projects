@@ -1,112 +1,95 @@
+#define billion 1E9L
+#define iterations 10000
 #define _GNU_SOURCE
-#define billion 1E9
-#define iterations 500
 
-#include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
+#include <stdint.h>
 #include <time.h>
 #include <sched.h>
-#include <pthread.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <assert.h>
+#include <unistd.h>
 
-struct timespec start;
-struct timespec end;
-char input[iterations];
-int fd1[2];
-int fd2[2];
-
-void* thread_1_function()
+int main()
 {
-	//write to the buffer that parent was waiting on
-	write(fd2[1],"",sizeof(""));
-	//initalize read to transfer controlback	
-	read(fd1[0], input,0);
-}
+	int fd1[2];
+	int fd2[2];
 
+	pipe(fd1) || pipe(fd2);
 
-int main(int argc, char argv[])
-{
-	//time struct declaration
-	struct timespec start,end;
-	
-	//sets program to only use core 0
 	cpu_set_t cpu_set;
 	CPU_ZERO(&cpu_set);
-	CPU_SET(0,&cpu_set);
 
+	struct timespec start,end;
 
-	if((sched_setaffinity(0, sizeof(cpu_set_t), &cpu_set) < 1))
-	{
-
-	int nproc = sysconf(_SC_NPROCESSORS_ONLN);
-	int k;
+	//create child process
+	pid_t  pid1;
+	assert((pid1 = fork()) >= 0);
 	
-	printf("Processor used: ");
-	for(k = 0; k < nproc; ++k)
+
+	/*	child process is the first 
+	 *	part of the if statement, while
+	 *	the parent process is the else statement
+	 *	each process shall set its affinity to core 0
+	 *      
+	 *      child process will run a loop for as long as
+	 *      read does not return an error, writing back to the 
+	 *      parent facing pipe.
+	 *
+	 *      parent process will intialize the timespec structs 
+	 *	and run a set iteration loop or reading and writing
+	 *	this reading should force a context switch between 
+	 *	parent and child
+	 *
+	 */
+	if(pid1 == 0)
 	{
-		printf("%d ", CPU_ISSET(k, &cpu_set));
+		close(fd1[1]);
+		close(fd2[0]);
+
+		CPU_SET(0, &cpu_set);
+		sched_setaffinity(0,sizeof(cpu_set), &cpu_set);
+
+		int i;
+		
+		while(read(fd1[0], &i,4))
+			write(fd2[1],&i,4);
+		
+		close(fd1[0]);
+		close(fd2[1]);
+		return 0;
 	}
-	
-	printf("\n");
-
-
-	if(pipe(fd2) == -1)
+	else
 	{
-		printf("fd1 pipe error");
-		return 1;
-	}
-	//fail on file descriptor 2 fail
-	if(pipe(fd2) == -1)
-	{
-		printf("fd2 pipe error");
-		return 1;
-	}
+		printf("calculating 10000 context switches\n");
+		close(fd1[0]);
+		close(fd2[1]);
 
-
-	pthread_t thread_1;
-
-
-	pthread_create(&thread_1, NULL, &thread_1_function, NULL);
-
-	
-	pthread_join(thread_1,NULL);
-
-	//seed parent pipe
-	write(fd1[1],"start",sizeof("start"));	
-	
-	
-	int i;
-	uint64_t sum = 0;
-
-	for(i = 0; i < iterations; ++i)
-	{
-
-		//initalize clock start
+		CPU_SET(0, &cpu_set);
+		sched_setaffinity(0, sizeof(cpu_set), &cpu_set);
+		
+		int i, i_returned;
+		
 		clock_gettime(CLOCK_MONOTONIC, &start);
-		//wait for child thread to write to pipe
-		read(fd2[0],input,0);
-		//record clock end
-		clock_gettime(CLOCK_MONOTONIC, &end);	
 		
-		write(fd1[1],"",sizeof(""));
+		for(i = 0; i < iterations; ++i)
+		{	
+			write(fd1[1], &i,4);
+			read(fd2[0], &i_returned,4);
+			if(i_returned != i)
+				break;
+		}
 
+		clock_gettime(CLOCK_MONOTONIC, &end);
 		
+		unsigned long long difference = billion * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
+		unsigned long long system_calls = (2684 * 4) * iterations;
+		printf("%llu\n", (difference - system_calls)/iterations);	
+		printf("%llu nanosecond average for context switches\n", difference/iterations);
+		close(fd1[1]);
+		close(fd2[0]);
+		return 0;
 
-		uint64_t diff;
-		diff = billion * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
-		diff = diff;
-		sum += diff;
 	}
-
-	
-	sum = sum/iterations;
-	printf("%.4llu nanosecond average for thread context switching", (long long unsigned)sum);
-
-	close(*fd1);
-	close(*fd2);
-}
-
-	return 0;
-
 }
