@@ -47,15 +47,16 @@ int main()
 	{
 		close(fd1[1]);
 		close(fd2[0]);
-
+		
+		//set affinity
 		CPU_SET(0, &cpu_set);
 		sched_setaffinity(0,sizeof(cpu_set), &cpu_set);
 
 		int i;
-		
+		//loop until fd1 is null	
 		while(read(fd1[0], &i,4))
 			write(fd2[1],&i,4);
-		
+		//close pipes
 		close(fd1[0]);
 		close(fd2[1]);
 		return 0;
@@ -65,14 +66,15 @@ int main()
 		printf("calculating 10000 context switches\n");
 		close(fd1[0]);
 		close(fd2[1]);
-
+	
+		//set affinity
 		CPU_SET(0, &cpu_set);
 		sched_setaffinity(0, sizeof(cpu_set), &cpu_set);
 		
 		int i, i_returned;
-		
+		//start time
 		clock_gettime(CLOCK_MONOTONIC, &start);
-		
+		//loop n iterations
 		for(i = 0; i < iterations; ++i)
 		{	
 			write(fd1[1], &i,4);
@@ -82,11 +84,11 @@ int main()
 		}
 
 		clock_gettime(CLOCK_MONOTONIC, &end);
-		
+		//calculate switch time poer iteration
 		unsigned long long difference = billion * (end.tv_sec - start.tv_sec) + end.tv_nsec - start.tv_nsec;
-		unsigned long long system_calls = (2684 * 4) * iterations;
-		printf("%llu\n", (difference - system_calls)/iterations);	
 		printf("%llu nanosecond average for context switches\n", difference/iterations);
+		
+		//close pipes
 		close(fd1[1]);
 		close(fd2[0]);
 		return 0;
