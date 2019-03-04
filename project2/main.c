@@ -239,72 +239,74 @@ void VMS(char * filename){
 			else {
 				
 				if(num[0] == '3') {
-					struct node * intoGlobal = removeFromFIFO(&firstHead, &firstLast);
-					//move from sublist into global
-					//check if global is full, evicting
-					//from main memory and global if need be
-					if(subQFull(&firstHead)) {
-						if(intoGlobal->instr == 'R') {
-							if(subQFull(&globalCleanHead)) {
-								struct node * tbd = removeFromFIFO(&globalCleanHead,&globalCleanLast);
-								deleteNode(tbd);
-								insertIntoFIFO(&globalCleanHead, &globalCleanLast, intoGlobal->address, intoGlobal->instr);
-								free(intoGlobal);
-							}else {
-								insertIntoFIFO(&globalCleanHead, &globalCleanLast, intoGlobal->address, intoGlobal->instr);
-								free(intoGlobal);
-							}
+						if(isFull()) {
+						struct node * intoGlobal = removeFromFIFO(&firstHead, &firstLast);
+						//move from sublist into global
+						//check if global is full, evicting
+						//from main memory and global if need be
+						if(subQFull(&firstHead)) {
+							if(intoGlobal->instr == 'R') {
+								if(subQFull(&globalCleanHead)) {
+									struct node * tbd = removeFromFIFO(&globalCleanHead,&globalCleanLast);
+									deleteNode(tbd);
+									insertIntoFIFO(&globalCleanHead, &globalCleanLast, intoGlobal->address, intoGlobal->instr);
+									free(intoGlobal);
+								}else {
+									insertIntoFIFO(&globalCleanHead, &globalCleanLast, intoGlobal->address, intoGlobal->instr);
+									free(intoGlobal);
+								}
 
-							insertFirst(address,instr);
-						}else {
-							if(subQFull(&globalDirtyHead)) {
-								struct node * tbd = removeFromFIFO(&globalDirtyHead,&globalDirtyLast);
-								deleteNode(tbd);
-								insertIntoFIFO(&globalDirtyHead, &globalDirtyLast, intoGlobal->address, intoGlobal->instr);
-								free(intoGlobal);
-							} else {
-								insertIntoFIFO(&globalDirtyHead, &globalDirtyLast, intoGlobal->address, intoGlobal->instr);
-								free(intoGlobal);
-							}
-
-							insertFirst(address,instr);
-						}
-					}else {
-						//insert new reference into main memory and sublist
-						insertFirst(address,instr);
-						insertIntoFIFO(&firstHead, &firstLast, intoGlobal->address, intoGlobal->instr);
-						free(intoGlobal);
-					}
-				} else {
-					struct node * intoGlobal = removeFromFIFO(&secondHead, &secondLast);
-					//move from sublist into global
-					//check if global is full, evicting
-					//from main memory and global if need be
-					if(subQFull(&secondHead)) {
-						if(intoGlobal->instr == 'R') {
-							if(subQFull(&globalCleanHead)) {
-								struct node * tbd = removeFromFIFO(&globalCleanHead,&globalCleanLast);
-								deleteNode(tbd);
-								insertIntoFIFO(&globalCleanHead, &globalCleanLast, intoGlobal->address, intoGlobal->instr);
-								free(intoGlobal);
+								insertFirst(address,instr);
 							}else {
-								insertIntoFIFO(&globalCleanHead, &globalCleanLast, intoGlobal->address, intoGlobal->instr);
-								free(intoGlobal);
+								if(subQFull(&globalDirtyHead)) {
+									struct node * tbd = removeFromFIFO(&globalDirtyHead,&globalDirtyLast);
+									deleteNode(tbd);
+									insertIntoFIFO(&globalDirtyHead, &globalDirtyLast, intoGlobal->address, intoGlobal->instr);
+									free(intoGlobal);
+								} else {
+									insertIntoFIFO(&globalDirtyHead, &globalDirtyLast, intoGlobal->address, intoGlobal->instr);
+									free(intoGlobal);
+								}
+
+								insertFirst(address,instr);
 							}
 						}else {
-							if(subQFull(&globalDirtyHead)) {
-								struct node * tbd = removeFromFIFO(&globalDirtyHead,&globalDirtyLast);
-								deleteNode(tbd);
-								insertIntoFIFO(&globalDirtyHead, &globalDirtyLast, intoGlobal->address, intoGlobal->instr);
-								free(intoGlobal);
-							} else {
-								insertIntoFIFO(&globalDirtyHead, &globalDirtyLast, intoGlobal->address, intoGlobal->instr);
-								free(intoGlobal);
-							}
+							//insert new reference into main memory and sublist
+							insertFirst(address,instr);
+							insertIntoFIFO(&firstHead, &firstLast, intoGlobal->address, intoGlobal->instr);
+							free(intoGlobal);
 						}
-					}else {
-						insertIntoFIFO(&secondHead, &secondLast, intoGlobal->address, intoGlobal->instr);
-						free(intoGlobal);
+					} else {
+						struct node * intoGlobal = removeFromFIFO(&secondHead, &secondLast);
+						//move from sublist into global
+						//check if global is full, evicting
+						//from main memory and global if need be
+						if(subQFull(&secondHead)) {
+							if(intoGlobal->instr == 'R') {
+								if(subQFull(&globalCleanHead)) {
+									struct node * tbd = removeFromFIFO(&globalCleanHead,&globalCleanLast);
+									deleteNode(tbd);
+									insertIntoFIFO(&globalCleanHead, &globalCleanLast, intoGlobal->address, intoGlobal->instr);
+									free(intoGlobal);
+								}else {
+									insertIntoFIFO(&globalCleanHead, &globalCleanLast, intoGlobal->address, intoGlobal->instr);
+									free(intoGlobal);
+								}
+							}else {
+								if(subQFull(&globalDirtyHead)) {
+									struct node * tbd = removeFromFIFO(&globalDirtyHead,&globalDirtyLast);
+									deleteNode(tbd);
+									insertIntoFIFO(&globalDirtyHead, &globalDirtyLast, intoGlobal->address, intoGlobal->instr);
+									free(intoGlobal);
+								} else {
+									insertIntoFIFO(&globalDirtyHead, &globalDirtyLast, intoGlobal->address, intoGlobal->instr);
+									free(intoGlobal);
+								}
+							}
+						}else {
+							insertIntoFIFO(&secondHead, &secondLast, intoGlobal->address, intoGlobal->instr);
+							free(intoGlobal);
+						}
 					}
 				}
 			}
