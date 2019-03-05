@@ -156,7 +156,7 @@ void VMS(char * filename){
 	
 	while(fscanf(fp, "%x %c", &address, &instr) != EOF)
 	{	
-		if(i++ == 20)break;
+		//if(i++ == 500000)break;
 		//determine which process the address belongs to
 		
 		char num[10];
@@ -168,18 +168,7 @@ void VMS(char * filename){
 		*	clean or dirty list that is of size nFrames/2 + 1, if a frame
 		*	is needed the clean/ dirty pages are evicted to make room
 		*/
-		if(i == 1){
-			//insertIntoFIFO(&globalDirtyHead,&globalDirtyLast,address,instr);
-			//insertFirst(address,instr);
-		}
-		if(i == 5) {
-			//insertIntoFIFO(&globalCleanHead, &globalCleanLast, address,instr);
-			//insertFirst(address,instr);
-		}
-		else {
-			//insertIntoFIFO(&secondHead,&secondLast,address,instr);
-			//insertFirst(address, instr);
-		}
+		
 	
 
 		//address is not in sub lists
@@ -264,11 +253,13 @@ void VMS(char * filename){
 						insertIntoFIFO(&firstHead, &firstLast, address, instr);
 						insertFirst(address,instr);
 					}else {
+						write++;
 						struct node * intoGlobal = removeFromFIFO(&firstHead, &firstLast);
 						if(intoGlobal->instr == 'R') { // place in global clean
 							if(SubLength(&globalCleanHead) > 0 ){ //if global is full
 								struct node * tbd = removeFromFIFO(&globalCleanHead,&globalCleanLast);
 								deleteNode(tbd);
+								
 								//place eviction page into global
 								insertIntoFIFO(&globalCleanHead, &globalCleanLast, intoGlobal->address, intoGlobal->instr);
 								free(intoGlobal);
@@ -283,6 +274,7 @@ void VMS(char * filename){
 							if(SubLength(&globalDirtyHead) > 0 ){ //if global is full
 								struct node * tbd = removeFromFIFO(&globalDirtyHead,&globalDirtyLast);
 								deleteNode(tbd);
+								write++;
 								//place eviction page into global
 								insertIntoFIFO(&globalDirtyHead, &globalDirtyLast, intoGlobal->address, intoGlobal->instr);
 								free(intoGlobal);
@@ -300,6 +292,7 @@ void VMS(char * filename){
 						insertIntoFIFO(&secondHead, &secondLast, address, instr);
 						insertFirst(address,instr);
 					}else {
+						write++;
 						struct node * intoGlobal = removeFromFIFO(&secondHead, &secondLast);
 						if(intoGlobal->instr == 'R') { //place in global clean
 							
@@ -320,6 +313,7 @@ void VMS(char * filename){
 							if(SubLength(&globalDirtyHead) > 0 ){ //if global is full
 								struct node * tbd = removeFromFIFO(&globalDirtyHead,&globalDirtyLast);
 								deleteNode(tbd);
+								write++;
 								//place eviction page into global
 								insertIntoFIFO(&globalDirtyHead, &globalDirtyLast, intoGlobal->address, intoGlobal->instr);
 								free(intoGlobal);
@@ -348,15 +342,7 @@ void VMS(char * filename){
 	printf("Total Disk Writes %d\n", write);
 	printf("Total Disk Reads: %d\n", read);
 	printf("Main list: ");
-	displayForward();
-	printf("\nFirst sub list: ");
-	printList(&firstHead);
-	printf("\nSecond sub list: ");
-	printList(&secondHead);
-	printf("globalClean: ");
-	printList(&globalCleanHead);
-	printf("globalDirty: ");
-	printList(&globalDirtyHead);
+	
 
 	
 }
