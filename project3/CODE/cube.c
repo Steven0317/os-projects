@@ -27,8 +27,16 @@ command_line_usage()
 void 
 kill_wizards(struct wizard *w)
 {
-  /* Fill in */
-
+  /*
+  * iterate over all wizard threads and  
+  * kill thread, this should be called once a winner
+  * is declared
+  */
+  int i;
+  for( i = 0; i < total; ++i)
+  {
+    pthread_cancel(w[i]);
+  }
 
   return;
 }
@@ -36,7 +44,35 @@ kill_wizards(struct wizard *w)
 int 
 check_winner(struct cube* cube)
 {
-  /* Fill in */
+  int i;
+  int checkA = 0;
+  int checkB = 0;
+
+  for(i = 0; i < cube->teamA->size; ++i)
+  {
+    if(cube->teamA_wizards[i]->status == 1)
+    {
+      checkA += 1;
+    }
+    if(checkA == cube->teamsA_size)
+    {
+      printf("\nWinner: Team B");
+      return 1;
+    }
+  }
+
+  for(i = 0; i < cube->teamB->size; ++i)
+  {
+    if(cube->teamA_wizards[i]->status == 1)
+    {
+      checkB += 1;
+    }
+    if(checkB == cube->teamA_size)
+    {
+      printf("\nWinner: Team A");
+      return 1;
+    }
+  }
 
   return 0;
 }
@@ -166,8 +202,8 @@ struct wizard *init_wizard(struct cube* cube, char team, int id)
       }
     }
 
-  /* Fill in */
-
+  
+  sem_init(&w->frz,0,1);
 
   return w;
 }
