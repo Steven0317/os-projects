@@ -261,6 +261,13 @@ main(int argc, char** argv)
      teamA_size, timeBsize, cube_size, and seed */
 
   i = 1;
+  if(i == argc)
+    {
+      fprintf(stderr, "Missing Arguments\n");
+      command_line_usage();
+      exit(-1);
+    }
+
   while(i < argc) 
     {
       if (!strcmp(argv[i], "-size")) 
@@ -338,7 +345,7 @@ main(int argc, char** argv)
 
   /* Sets the random seed */
   srand(seed);
-
+  
   /* Checks that the number of wizards does not violate
      the "max occupancy" constraint */
   if ((teamA_size + teamB_size) > ((cube_size * cube_size) * 2))
