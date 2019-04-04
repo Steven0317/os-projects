@@ -209,128 +209,134 @@ struct wizard *init_wizard(struct cube* cube, char team, int id)
 int 
 interface(void *cube_ref)
 {
-  struct cube* cube;
-  char *line;
-  char *command;
-  int i,j;
+	struct cube* cube;
+	char *line;
+	char *command;   
+	int i, j; 
+	int ckwin = 0;
   
-  numOfWizs = cube->teamA_size + cube->teamB_size;
-  pthread_t wizardArray[numOfWizs];
-  
-  cube = (struct cube *)cube_ref;
-  assert(cube);
 
-  using_history();
-  while (TRUE)
+	cube = (struct cube *)cube_ref;  
+	assert(cube);
+  
+	total = cube->teamA_size + cube->teamB_size;
+	pthread_t wid[total];
+
+	using_history();
+	while (1)
     {
-
-      sem_wait(&interfaceLockout);
-      if(cube->game_status != 1 && check_winner(cube))
-      {
-        cube->game_status = 1;
-        kill_wizards(wizardArray);
-        sem_post(&interfaceLockout);
-      }
-      line = readline("cube> ");
-      if (line == NULL) continue;
-      if (strlen(line) == 0) continue;
+		sem_wait(&user);
+		if(cube->game_status != 1 && check_winner(cube))
+		{
+			cube->game_status = 1;
+			kill_wizards(wid);
+			
+			sem_post(&user); 
+		}
+			  
+		line = readline("\ncube> ");
+		if (line == NULL) continue;
+		if (strlen(line) == 0) continue;
       
-      add_history(line);
+		add_history(line);
 
-      i = 0;
-      while (isspace(line[i])) i++;
-      
-      command = &line[i];
-      if (!strcmp(command, "exit"))
-	{
-	  return 0;
+		i = 0;
+		while (isspace(line[i])) i++;
+		  
+		command = &line[i];
+		if (!strcmp(command, "exit"))
+		{
+			return 0;
+		}
+		else if (!strcmp(command, "show"))
+		{
+			sem_post(&user);
+			print_cube(cube);
+		}
+		else if (!strcmp(command, "start"))  
+		{
+			if (cube->game_status == 1)
+			{
+				sem_post(&user);			  
+				fprintf(stderr, "Game is over. Cannot be started again\n");
+			}
+			else if (cube->game_status == 0)
+			{
+				sem_post(&user);			  
+				fprintf(stderr, "Game is in progress. Cannot be started again\n");
+			}
+			else
+			{
+				sem_post(&user);			  
+				cube->game_status = 0;
+			   
+				for(i = 0, j = 0; i < total; i++)
+				{
+					if(i < cube->teamA_size)
+					{
+						pthread_create(&wid[i], NULL, wizard_func, cube->teamA_wizards[i]);
+					}
+					else
+					{  
+						pthread_create(&wid[i], NULL, wizard_func, cube->teamB_wizards[j]);
+						j++;
+					}
+				}
+			}
+		}
+		else if (!strcmp(command, "c" ))
+		{
+			if (cube->game_status == 1)
+			{
+				sem_post(&user);			  
+				fprintf(stderr, "Game is over. Cannot be started again\n");
+			}
+			else
+			{
+				while(1)
+				{
+					if(check_winner(cube))
+					{
+						cube->game_status = 1;
+						kill_wizards(wid);
+						sem_post(&user);
+						break;
+					}
+					
+					sem_post(&wiz);
+					sem_wait(&user);
+				}
+			}
+		}
+		else if (!strcmp(command, "s"))
+		{
+			if (cube->game_status == 1)
+			{
+				sem_post(&user);			  
+				fprintf(stderr, "Game is over. Cannot be started again\n");
+			}
+			else
+			{
+				sem_post(&wiz);
+			}
+		}
+		  
+		else if (!strcmp(command, "stop"))
+		{
+			/* Stop the game */
+			sem_post(&user);
+			return 1;
+		}
+		else
+		{
+			sem_post(&user);
+			fprintf(stderr, "unknown command %s\n", command);
+		}
+
+		free(line);
 	}
-      else if (!strcmp(command, "show"))
-	{
-	  print_cube(cube);
-	}
-      else if (!strcmp(command, "start"))
-	{
-	  if (cube->game_status == 1)
-	    {
-	      fprintf(stderr, "Game is over. Cannot be started again\n");
-	    }
-	  else if (cube->game_status == 0)
-	    {
-	      fprintf(stderr, "Game is in progress. Cannot be started again\n");
-	    }
-	  else
-	    {
-        sem_post(&interfaceLockout);
-	      cube->game_status = 0;
-	      
-	      /* Start the game */
-        int k;
-	      for(j = 0, k = 0;j < cube->teamA_size;++k, ++j)
-        {
-          pthread_create(&wizardArray[i],NULL,wizard_func,cube->teamA_wizards[i]);
-        }
-        for(j = 0;j < cube->teamB_size;++k, ++j)
-        {
-          pthread_create(&wizardArray[k],NULL,wizard_func,cube->teamB_wizards[i]);
-        }
 
-
-	    }
-	}
-      else if(!strcmp(command, "c"))
-  {
-        if(cube->game_status == 1)
-        {
-          sem_post(&interfaceLockout);
-          printf("game already completed\n");
-        }
-        else
-        {
-          while(TRUE)
-          {
-            if(check_winner(cube))
-            {
-              cube->game_status = 1;
-              kill_wizards(wizardArray);
-              sem_post(&interfaceLockout);
-              break;
-            }
-
-            sem_post(&wizardLockout);
-            sem_wait(&interfaceLockout);
-          }
-        }
-        
-  }
-      else if(!strcmp(command, "s"))
-  {
-      if(cube->game_status == 1)
-        {
-          sem_post(&interfaceLockout);
-          printf("game already completed\n");
-        }
-        else
-        {
-            sem_post(&wizardLockout);
-            
-          
-        }
-  }
-      else if (!strcmp(command, "stop"))
-	{
-	  /* Stop the game */
-	  return 1;
-	}
-      else
-	{
-	  fprintf(stderr, "unknown command %s\n", command);
-	}
-
-      free(line);
-    }
-
-  return 0;
+	return 0;
 }
 
 int 
