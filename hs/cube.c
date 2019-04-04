@@ -18,8 +18,8 @@
 #define FALSE 0
 
 //thread and mutex stuff
-pthread_t *aWizardThreads = NULL;
-pthread_t *bWizardThreads = NULL;
+pthread_t *aTeam = NULL;
+pthread_t *bTeam = NULL;
 
 
 
@@ -29,20 +29,15 @@ command_line_usage()
 	fprintf(stderr, "-size <size of cube> -teamA <size of team> -teamB <size of team> -seed <seed value>\n");
 }
 
-void
-kill_wizards(struct wizard *w)
-{
-	/* Fill in */
-	//i don't think we need this since i kill the thread a different way.
-	//its up to you if you want to change it.
-
-	return;
-}
-
+/*
+*	checks if the amount of frozen wizards
+*	per teams is equal to team size, sets 
+*	game status to complete if so or 0
+*/
 int
 check_winner(struct cube* cube)
 {
-	/* Fill in */
+	
 	int i;
 	if (aTeamFrozen == cube->teamA_size) {
 		cube->game_status = 1;
@@ -58,7 +53,7 @@ check_winner(struct cube* cube)
 	{
 		for (i = 0; i < cube->teamA_size + cube->teamB_size; i++)
 		{
-			sem_post(&singleStepMove);
+			sem_post(&singleStep);
 		}
 	}
 
@@ -118,7 +113,8 @@ print_cube(struct cube *cube)
 	return;
 }
 
-struct wizard *init_wizard(struct cube* cube, char team, int id)
+struct 
+wizard *init_wizard(struct cube* cube, char team, int id)
 {
 	int x, newx;
 	int y, newy;
@@ -188,13 +184,12 @@ struct wizard *init_wizard(struct cube* cube, char team, int id)
 		}
 	}
 
-	/* Fill in */
-
 	return w;
 }
 
 
-int interface(void *cube_ref)
+int
+interface(void *cube_ref)
 {
 	struct cube* cube;
 	char *line;
@@ -206,19 +201,19 @@ int interface(void *cube_ref)
 	assert(cube);
 
 	using_history();
-	while (1)
+	while (TRUE)
 	{
-		sem_wait(&commandLineCurser);
+		sem_wait(&interfaceLocker);
 
 		line = readline("cube> ");
 		if (line == NULL)
 		{
-			sem_post(&commandLineCurser);
+			sem_post(&interfaceLocker);
 			continue;
 		}
 		if (strlen(line) == 0)
 		{
-			sem_post(&commandLineCurser);
+			sem_post(&interfaceLocker);
 			continue;
 		}
 
@@ -233,54 +228,98 @@ int interface(void *cube_ref)
 			cube->game_status = 1;
 			for (j = 0; j < cube->teamA_size + cube->teamB_size; j++)
 			{
-				sem_post(&singleStepMove);
+				sem_post(&singleStep);
 			}
 			return 0;
 		}
 		else if (!strcmp(command, "show"))
 		{
 			print_cube(cube);
-			sem_post(&commandLineCurser);
+			sem_post(&interfaceLocker);
 		}
 		else if (!strcmp(command, "start"))
 		{
 			if (cube->game_status == 1)
 			{
 				fprintf(stderr, "Game is over. Cannot be started again\n");
-				sem_post(&commandLineCurser);
+				sem_post(&interfaceLocker);
 
 			}
 			else if (cube->game_status == 0)
 			{
 				fprintf(stderr, "Game is in progress. Cannot be started again\n");
-				sem_post(&commandLineCurser);
+				sem_post(&interfaceLocker);
 
 			}
 			else
 			{
 				cube->game_status = 0;
 
-				/* Fill in */
-			  //start the game by creating all the threads and init semaphores
-			  //init single step key
-				pthread_mutex_init(&mutexStep, NULL);
+			  	//start the game by creating all the threads and init semaphores
+			  
+				
 				pthread_mutex_init(&mutexRoom, NULL);
-				sem_init(&continuousMove, 0, 0);
-				sem_init(&singleStepMove, 0, 0);
-				sem_init(&increATeamFrozen, 0, 1);
-				sem_init(&increBTeamFrozen, 0, 1);
-				sem_post(&commandLineCurser);
+				sem_init(&singleStep, 0, 0);
+				sem_init(&ATeam, 0, 1);
+				sem_init(&BTeam, 0, 1);
+				sem_post(&interfaceLocker);
 
 
 				//create the threads team A wizards
 				for (j = 0; j < cube->teamA_size; j++) {
-					pthread_create(&aWizardThreads[j], NULL, wizard_func, (void*)cube->teamA_wizards[j]);
+					pthread_create(&aTeam[j], NULL, wizard_func, (void*)cube->teamA_wizards[j]);
 				}
 
 				//create the threads team B wizards
 				for (j = 0; j < cube->teamB_size; j++) {
-					pthread_create(&bWizardThreads[j], NULL, wizard_func, (void*)cube->teamB_wizards[j]);
+					pthread_create(&bTeam[j], NULL, wizard_func, (void*)cube->teamB_wizards[j]);
 				}
+			}
+		}
+		else if (!strcmp(command, "s"))
+		{
+			if (cube->game_status == 0)
+			{
+				/*
+				*	wait for user command after each run
+				*/
+				sem_post(&singleStep);
+			}
+			else if (cube->game_status == 1)
+			{
+				fprintf(stderr, "Game is over. Cannot be started again\n");
+				sem_post(&interfaceLocker);
+			}
+			else
+			{
+				fprintf(stderr, "Game has not started. Start the game.\n");
+				sem_post(&interfaceLocker);
+			}
+		}
+		else if (!strcmp(command, "c"))
+		{
+			if (cube->game_status == 0)
+			{
+				/*
+				*	run until game completion
+				*/
+				do {
+					sem_post(&singleStep);
+					sem_wait(&interfaceLocker);
+				} while (cube->game_status != 1);
+
+				// return to cube interface
+				sem_post(&interfaceLocker);
+			}
+			else if (cube->game_status == 1)
+			{
+				fprintf(stderr, "Game is over. Cannot be started again\n");
+				sem_post(&interfaceLocker);
+			}
+			else
+			{
+				fprintf(stderr, "Game has not started. Start the game.\n");
+				sem_post(&interfaceLocker);
 			}
 		}
 		else if (!strcmp(command, "stop"))
@@ -288,56 +327,10 @@ int interface(void *cube_ref)
 			/* Stop the game */
 			return 1;
 		}
-		else if (!strcmp(command, "s"))
-		{
-			if (cube->game_status == 0)
-			{
-				sem_post(&singleStepMove);
-			}
-			else if (cube->game_status == 1)
-			{
-				fprintf(stderr, "Game is over. Cannot be started again\n");
-				sem_post(&commandLineCurser);
-			}
-			else
-			{
-				fprintf(stderr, "Game has not started. Start the game.\n");
-				sem_post(&commandLineCurser);
-			}
-		}
-		else if (!strcmp(command, "c"))
-		{
-			if (cube->game_status == 0)
-			{
-				// for (j = 0; j < (cube->teamA_size + cube->teamB_size); j++)
-				// {
-				// 	sem_post(&continuousMove);
-				// }
-
-				// keep performing moves one at a time until the game is over
-				do {
-					sem_post(&singleStepMove);
-					sem_wait(&commandLineCurser);
-				} while (cube->game_status != 1);
-
-				// return to cube interface
-				sem_post(&commandLineCurser);
-			}
-			else if (cube->game_status == 1)
-			{
-				fprintf(stderr, "Game is over. Cannot be started again\n");
-				sem_post(&commandLineCurser);
-			}
-			else
-			{
-				fprintf(stderr, "Game has not started. Start the game.\n");
-				sem_post(&commandLineCurser);
-			}
-		}
 		else
 		{
 			fprintf(stderr, "unknown command %s\n", command);
-			sem_post(&commandLineCurser);
+			sem_post(&interfaceLocker);
 
 		}
 
@@ -363,13 +356,16 @@ main(int argc, char** argv)
 	struct wizard *wizard_descr;
 	int i, j;
 
-	//threads to be created
-	aWizardThreads = (pthread_t*)malloc(DEFAULT_TEAM_SIZE * sizeof(pthread_t));
-	bWizardThreads = (pthread_t*)malloc(DEFAULT_TEAM_SIZE * sizeof(pthread_t));;
-	sem_init(&commandLineCurser, 0, 1);
+	/*
+	*	threads for A & B and interface sem init
+	*/
 
-	assert(aWizardThreads);
-	assert(bWizardThreads);
+	aTeam = (pthread_t*)malloc(DEFAULT_TEAM_SIZE * sizeof(pthread_t));
+	bTeam = (pthread_t*)malloc(DEFAULT_TEAM_SIZE * sizeof(pthread_t));;
+	sem_init(&interfaceLocker, 0, 1);
+
+	assert(aTeam);
+	assert(bTeam);
 
 	/* Parse command line and fill:
 	   teamA_size, timeBsize, cube_size, and seed */
@@ -408,8 +404,8 @@ main(int argc, char** argv)
 				fprintf(stderr, "Illegal team size\n");
 				exit(-1);
 			}
-			pthread_t *temp = realloc(aWizardThreads, teamA_size * sizeof(pthread_t));
-			aWizardThreads = temp;
+			pthread_t *temp = realloc(aTeam, teamA_size * sizeof(pthread_t));
+			aTeam = temp;
 		}
 		else if (!strcmp(argv[i], "-teamB"))
 		{
@@ -426,8 +422,8 @@ main(int argc, char** argv)
 				fprintf(stderr, "Illegal team size\n");
 				exit(-1);
 			}
-			pthread_t *temp = realloc(bWizardThreads, teamB_size * sizeof(pthread_t));
-			bWizardThreads = temp;
+			pthread_t *temp = realloc(bTeam, teamB_size * sizeof(pthread_t));
+			bTeam = temp;
 		}
 		else if (!strcmp(argv[i], "-seed"))
 		{
@@ -491,8 +487,6 @@ main(int argc, char** argv)
 			room->wizards[0] = NULL;
 			room->wizards[1] = NULL;
 			room_col[j] = room;
-
-			/* Fill in */
 		}
 
 		cube->rooms[i] = room_col;
@@ -533,23 +527,24 @@ main(int argc, char** argv)
 		cube->teamB_wizards[i] = wizard_descr;
 	}
 
-	/* Fill in */
-	//
 
 	/* Goes in the interface loop */
 	res = interface(cube);
 
-	//wait for the other threads to terminate to have a clean exit
+	/*
+	*	thread clean up and deallocation 
+	*	of memory segments
+	*/
 	for (i = 0; i < cube->teamA_size; i++) {
-		pthread_join(aWizardThreads[i], NULL);
+		pthread_join(aTeam[i], NULL);
 	}
 
 	for (i = 0; i < cube->teamB_size; i++) {
-		pthread_join(bWizardThreads[i], NULL);
+		pthread_join(bTeam[i], NULL);
 	}
 
-	free(aWizardThreads);
-	free(bWizardThreads);
+	free(aTeam);
+	free(bTeam);
 	pthread_mutex_destroy(&mutexRoom);
 	exit(res);
 }
@@ -589,22 +584,23 @@ struct room *
 int
 try_room(struct wizard *w, struct room *oldroom, struct room* newroom)
 {
-	/* Fill in */
+	/*
+	* check both spots of a room to find a spot
+	*/
 	int i;
 	for (i = 0; i < 2; i++)
 	{
 		if(newroom->wizards[i] == NULL)
-		{
-			//there is an empty spot in the room
+		{	
 			return 0;
 		}
 	}
 
-	//room is full
 	return 1;
 }
 
-struct wizard *
+struct 
+wizard *
 	find_opponent(struct wizard* self, struct room *room)
 {
 	struct wizard *other = NULL;
@@ -643,8 +639,6 @@ switch_rooms(struct wizard *w, struct room *oldroom, struct room* newroom)
 		print_cube(w->cube);
 		exit(1);
 	}
-
-	/* Fill in */
 
 	/* Updates room wizards and determines opponent */
 	if (newroom->wizards[0] == NULL)
@@ -686,10 +680,10 @@ fight_wizard(struct wizard *self, struct wizard *other, struct room *room)
 			self->team, self->id, room->x, room->y,
 			other->team, other->id);
 
-		/* Fill in */
+		
 		other->status = 1;
 		other->team = tolower(other->team);
-		increFrozenCount(other);
+		incrementFCount(other);
 	}
 
 	/* Self freezes and release the lock */
@@ -699,11 +693,10 @@ fight_wizard(struct wizard *self, struct wizard *other, struct room *room)
 			self->team, self->id, room->x, room->y,
 			other->team, other->id);
 
-		/* Fill in */
 
 		self->status = 1;
 		self->team = tolower(self->team);
-		increFrozenCount(self);
+		incrementFCount(self);
 
 	}
 
@@ -714,39 +707,41 @@ fight_wizard(struct wizard *self, struct wizard *other, struct room *room)
 }
 
 //increments count of appropriate team
-void increFrozenCount(const struct wizard * wiz)
+void 
+incrementFCount(const struct wizard * wiz)
 {
 
 	if (tolower(wiz->team) == 'a')
 	{
-		sem_wait(&increATeamFrozen);
+		sem_wait(&ATeam);
 		aTeamFrozen++;
-		sem_post(&increATeamFrozen);
+		sem_post(&ATeam);
 	}
 	else
 	{
-		sem_wait(&increBTeamFrozen);
+		sem_wait(&BTeam);
 		bTeamFrozen++;
-		sem_post(&increBTeamFrozen);
+		sem_post(&BTeam);
 	}
 
 }
 
-//increments count of appropriate team
-void decreFrozenCount(const struct wizard * wiz)
+//decrements count of appropriate team
+void 
+decrementFCount(const struct wizard * wiz)
 {
 
 	if (tolower(wiz->team) == 'a')
 	{
-		sem_wait(&increATeamFrozen);
+		sem_wait(&ATeam);
 		aTeamFrozen--;
-		sem_post(&increATeamFrozen);
+		sem_post(&ATeam);
 	}
 	else
 	{
-		sem_wait(&increBTeamFrozen);
+		sem_wait(&BTeam);
 		bTeamFrozen--;
-		sem_post(&increBTeamFrozen);
+		sem_post(&BTeam);
 	}
 
 }
@@ -766,10 +761,12 @@ free_wizard(struct wizard *self, struct wizard *other, struct room* room)
 			self->team, self->id, room->x, room->y,
 			toupper(other->team), other->id);
 
-		/* Fill in */
+		/*
+		* reset status and decrease frozen counter
+		*/
 		other->status = 0;
 		other->team = toupper(other->team);
-		decreFrozenCount(other);
+		decrementFCount(other);
 	}
 	else
 	{

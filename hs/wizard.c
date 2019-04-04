@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <assert.h>
-
+#include <ctype.h>
 #include "cube.h"
 #include "wizard.h"
 
@@ -30,7 +30,7 @@ wizard_func(void *wizard_descr)
 	/* Infinite loop */
 	while (1)
 	{
-		sem_wait(&singleStepMove);
+		sem_wait(&singleStep);
 
 		//kills the wizard
 		if (cube->game_status == 1) {
@@ -41,7 +41,7 @@ wizard_func(void *wizard_descr)
 		if (self->status == 1)
 		{
 			// if this wizard is frozen, allow another wizard to take the move
-			sem_post(&singleStepMove);
+			sem_post(&singleStep);
 			dostuff();
 			continue;
 		}
@@ -63,7 +63,7 @@ wizard_func(void *wizard_descr)
 
 			printf("Request denied, room locked!\n");
 			pthread_mutex_unlock(&mutexRoom);
-			sem_post(&commandLineCurser);
+			sem_post(&interfaceLocker);
 
 			/* Goes back to the initial state and try again */
 			continue;
@@ -116,9 +116,7 @@ wizard_func(void *wizard_descr)
 			}
 		}
 
-		// unlocks once a wizard is in a room and has taken action
-		// (don't want other wizards moving around while you're trying
-		// to fight or heal)
+		
 		pthread_mutex_unlock(&mutexRoom);
 
 		/* Thinks about what to do next */
@@ -126,7 +124,7 @@ wizard_func(void *wizard_descr)
 
 		oldroom = newroom;
 		newroom = choose_room(self);
-		sem_post(&commandLineCurser);
+		sem_post(&interfaceLocker);
 	}
 
 	return NULL;

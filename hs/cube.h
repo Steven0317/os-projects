@@ -7,14 +7,15 @@
 
 struct cube;
 
-//thread and semaphore stuff to be shared across threads
-sem_t continuousMove;
-sem_t singleStepMove;
-sem_t commandLineCurser;
-sem_t increATeamFrozen;
-sem_t increBTeamFrozen;
+/*
+* thread and semaphore  declarations
+*/
+
+sem_t singleStep;
+sem_t interfaceLocker;
+sem_t ATeam;
+sem_t BTeam;
 pthread_mutex_t mutexRoom;
-pthread_mutex_t mutexStep;
 int aTeamFrozen;
 int bTeamFrozen;
 
@@ -26,7 +27,6 @@ struct wizard {
 	int status; /* 0: alive, 1: frozen */
 	struct cube *cube;
 
-	/* Fill in as required */
 };
 
 struct room {
@@ -34,7 +34,7 @@ struct room {
 	int y;
 	struct wizard *wizards[2];
 
-	/* Fill in as required */
+	
 };
 
 struct cube {
@@ -48,14 +48,14 @@ struct cube {
 	/* Pointer to a two-dimensional array of rooms */
 	struct room ***rooms;
 
-	/* Fill in as required */
 };
 
 extern void print_wizard(struct wizard *);
-extern void kill_wizards(struct wizard *);
+extern void incrementFCount(const struct wizard *);
+extern void decrementFCount(const struct wizard *);
 extern void print_cube(struct cube *);
 extern int check_winner(struct cube *);
-extern void increFrozenCount(const struct wizard *);
+
 
 extern void dostuff();
 extern struct room * choose_room(struct wizard*);
