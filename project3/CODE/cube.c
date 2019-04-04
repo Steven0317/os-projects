@@ -42,37 +42,31 @@ kill_wizards(pthread_t *wizArr)
 int 
 check_winner(struct cube* cube)
 {
-  int i;
-  int checkA = 0;
-  int checkB = 0;
-
-  for(i = 0; i < cube->teamA_size; ++i)
-  {
-    if(cube->teamA_wizards[i]->status == 1){/*continue*/}
-    else
-    {
-      break;
-    }
-    if(i = cube->teamA_size - 1)
-    {
-      printf("Team B wins");
-    }
-  }
-
-  for(i = 0; i < cube->teamB_size; ++i)
-  {
-    if(cube->teamA_wizards[i]->status == 1){/*continue*/}
-    else
-    {
-      break;
-    }
-    if(i = cube->teamB_size - 1)
-    {
-      printf("Team A wins");
-    }
-
-  }
-  return 0;
+  int i, cA = 0, cB = 0;
+	for (i = 0; i < cube->teamA_size; i++)
+	{
+		if(cube->teamA_wizards[i]->status == 1)
+			cA++;
+		
+		if(cA == cube->teamA_size)
+		{
+			printf("\n\tTeam B won the game!\n");
+			return 1;
+		}
+	}
+	for (i = 0; i < cube->teamB_size; i++)
+	{
+		if(cube->teamB_wizards[i]->status == 1)
+			cB++;
+		
+		if(cB == cube->teamB_size)
+		{
+			printf("\n\tTeam A won the game!\n");
+			return 1;
+		}
+	}
+	
+	return 0;
 }
 
 void 
@@ -563,32 +557,32 @@ try_room(struct wizard *w, struct room *oldroom, struct room* newroom)
 
   sem_getvalue(&(newroom->frozenSmeaphore), &(newroom->status));
   if(newroom->status == 0)
-  {
-      sem_post(&interfaceLockout);
-      sem_wait(&wizardLockout);
-
-      while(TRUE)
-      {
-        if(w->status == 1)
-        {
-          sem_post(&interfaceLockout);
-          sem_wait(&(w->frozenSmeaphore));
-          sem_wait(&wizardLockout);
-          sem_post(&(w->frozenSmeaphore));
-        }
-        else
-        {
-          break;
-        }
-        
-      }
-
-      return 1;
-  }
-  else
-  {
-    return 0;
-  }
+	{
+		printf("Request denied, room locked!\n");
+		sem_post(&interfaceLockout);
+		sem_wait(&wizardLockout);
+	  
+		while(TRUE) 
+		{
+			/* 	Checks to see if wizard is frozen sleeps on frz until unfrozen, then sleeps
+				on wiz until woken by user. checks again if frozen. */
+			if(w->status == 1) 	// Frozen
+			{ 
+				sem_post(&interfaceLockout);
+				sem_wait(&w->frozenSmeaphore);
+				sem_wait(&wizardLockout);
+				sem_post(&w->frozenSmeaphore);
+			}
+			else 				// not frozen
+				break; 
+		}
+	  
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
   
 }
 
@@ -636,7 +630,6 @@ switch_rooms(struct wizard *w, struct room *oldroom, struct room* newroom)
   *   Figure out what needs to be filled
   *   in here.
   */
-    
   sem_post(&(oldroom->frozenSmeaphore));
   /* Updates room wizards and determines opponent */
   if (newroom->wizards[0] == NULL)
@@ -701,7 +694,7 @@ fight_wizard(struct wizard *self, struct wizard *other, struct room *room)
       self->status = 1;
       sem_wait(&(self->frozenSmeaphore));
 
-      return 1;
+    
     }
   return 0;
 }
@@ -723,6 +716,7 @@ free_wizard(struct wizard *self, struct wizard *other, struct room* room)
 
       other->status = 0;
       sem_post(&(other->frozenSmeaphore));
+      return 0;
     }
 
   /* The spell failed */
