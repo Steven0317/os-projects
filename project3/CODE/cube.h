@@ -2,8 +2,16 @@
 #define _CUBE_H
 
 #define SOLUTION
+#include <semaphore.h>
+
+
 
 struct cube;
+int numOfWizs;
+sem_t wizardLockout;
+sem_t interfaceLockout;
+
+
 
 struct wizard {
   int x;
@@ -12,14 +20,16 @@ struct wizard {
   char team;
   int status; /* 0: alive, 1: frozen */
   struct cube *cube; 
-
-  /* Fill in as required */
+  sem_t frozenSmeaphore;
+  
 };
   
 struct room {
   int x;
   int y;
   struct wizard *wizards[2];
+  int status;
+  sem_t frozenSmeaphore;
 
   /* Fill in as required */
 };
@@ -39,7 +49,7 @@ struct cube {
 };
 
 extern void print_wizard(struct wizard *);
-extern void kill_wizards(struct wizard *);
+extern void kill_wizards(pthread_t *wizArr);
 extern void print_cube(struct cube *);
 extern int check_winner(struct cube *);
 

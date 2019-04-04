@@ -25,7 +25,7 @@ command_line_usage()
 }
 
 void 
-kill_wizards(struct wizard *w)
+kill_wizards(pthread_t *wizArr)
 {
   /*
   * iterate over all wizard threads and  
@@ -33,12 +33,10 @@ kill_wizards(struct wizard *w)
   * is declared
   */
   int i;
-  for( i = 0; i < total; ++i)
+  for(i = 0; i < numOfWizs; ++i)
   {
-    pthread_cancel(w[i]);
+    pthread_cancel(wizArr[i]);
   }
-
-  return;
 }
 
 int 
@@ -48,32 +46,32 @@ check_winner(struct cube* cube)
   int checkA = 0;
   int checkB = 0;
 
-  for(i = 0; i < cube->teamA->size; ++i)
+  for(i = 0; i < cube->teamA_size; ++i)
   {
-    if(cube->teamA_wizards[i]->status == 1)
+    if(cube->teamA_wizards[i]->status == 1){/*continue*/}
+    else
     {
-      checkA += 1;
+      break;
     }
-    if(checkA == cube->teamsA_size)
+    if(i = cube->teamA_size - 1)
     {
-      printf("\nWinner: Team B");
-      return 1;
+      printf("Team B wins");
     }
   }
 
-  for(i = 0; i < cube->teamB->size; ++i)
+  for(i = 0; i < cube->teamB_size; ++i)
   {
-    if(cube->teamA_wizards[i]->status == 1)
+    if(cube->teamA_wizards[i]->status == 1){/*continue*/}
+    else
     {
-      checkB += 1;
+      break;
     }
-    if(checkB == cube->teamA_size)
+    if(i = cube->teamB_size - 1)
     {
-      printf("\nWinner: Team A");
-      return 1;
+      printf("Team A wins");
     }
-  }
 
+  }
   return 0;
 }
 
@@ -196,14 +194,14 @@ struct wizard *init_wizard(struct cube* cube, char team, int id)
 	    }
 	  
 	}
-      if (!initflag){
-	free(w);
-	return NULL;
-      }
+  if(!initflag){
+	  free(w);
+	  return NULL;
     }
+  }
 
   
-  sem_init(&w->frz,0,1);
+  sem_init(&(w->frozenSmeaphore),0,1);
 
   return w;
 }
@@ -214,14 +212,25 @@ interface(void *cube_ref)
   struct cube* cube;
   char *line;
   char *command;
-  int i;
-
+  int i,j;
+  
+  numOfWizs = cube->teamA_size + cube->teamB_size;
+  pthread_t wizardArray[numOfWizs];
+  
   cube = (struct cube *)cube_ref;
   assert(cube);
 
   using_history();
-  while (1)
+  while (TRUE)
     {
+
+      sem_wait(&interfaceLockout);
+      if(cube->game_status != 1 && check_winner(cube))
+      {
+        cube->game_status = 1;
+        kill_wizards(wizardArray);
+        sem_post(&interfaceLockout);
+      }
       line = readline("cube> ");
       if (line == NULL) continue;
       if (strlen(line) == 0) continue;
@@ -252,16 +261,62 @@ interface(void *cube_ref)
 	    }
 	  else
 	    {
+        sem_post(&interfaceLockout);
 	      cube->game_status = 0;
 	      
 	      /* Start the game */
-
-	      /* Fill in */
-
+        int k;
+	      for(j = 0, k = 0;j < cube->teamA_size;++k, ++j)
+        {
+          pthread_create(&wizardArray[i],NULL,wizard_func,cube->teamA_wizards[i]);
+        }
+        for(j = 0;j < cube->teamB_size;++k, ++j)
+        {
+          pthread_create(&wizardArray[k],NULL,wizard_func,cube->teamB_wizards[i]);
+        }
 
 
 	    }
 	}
+      else if(!strcmp(command, "c"))
+  {
+        if(cube->game_status == 1)
+        {
+          sem_post(&interfaceLockout);
+          printf("game already completed\n");
+        }
+        else
+        {
+          while(TRUE)
+          {
+            if(check_winner(cube))
+            {
+              cube->game_status = 1;
+              kill_wizards(wizardArray);
+              sem_post(&interfaceLockout);
+              break;
+            }
+
+            sem_post(&wizardLockout);
+            sem_wait(&interfaceLockout);
+          }
+        }
+        
+  }
+      else if(!strcmp(command, "s"))
+  {
+      if(cube->game_status == 1)
+        {
+          sem_post(&interfaceLockout);
+          printf("game already completed\n");
+        }
+        else
+        {
+            sem_post(&wizardLockout);
+            
+          
+        }
+  }
       else if (!strcmp(command, "stop"))
 	{
 	  /* Stop the game */
@@ -297,13 +352,7 @@ main(int argc, char** argv)
      teamA_size, timeBsize, cube_size, and seed */
 
   i = 1;
-  if(i == argc)
-    {
-      fprintf(stderr, "Missing Arguments\n");
-      command_line_usage();
-      exit(-1);
-    }
-
+  
   while(i < argc) 
     {
       if (!strcmp(argv[i], "-size")) 
@@ -390,6 +439,7 @@ main(int argc, char** argv)
       exit(1);
     }
 
+ 
 
   /* Creates the cube */
   cube = (struct cube *)malloc(sizeof(struct cube));
@@ -460,9 +510,8 @@ main(int argc, char** argv)
       cube->teamB_wizards[i] = wizard_descr;
     }
 
-  /* Fill in */
-  
-
+  sem_init(&interfaceLockout,0,1);
+  sem_init(&wizardLockout, 0, 0);
   /* Goes in the interface loop */
   res = interface(cube);
 
@@ -506,9 +555,34 @@ int
 try_room(struct wizard *w, struct room *oldroom, struct room* newroom)
 {
 
-  /* Fill in */
+  sem_getvalue(&(newroom->frozenSmeaphore), &(newroom->status));
+  if(newroom->status == 0)
+  {
+      sem_post(&interfaceLockout);
+      sem_wait(&wizardLockout);
 
-  return 1;
+      while(TRUE)
+      {
+        if(w->status == 1)
+        {
+          sem_post(&interfaceLockout);
+          sem_wait(&(w->frozenSmeaphore));
+          sem_wait(&wizardLockout);
+          sem_post(&(w->frozenSmeaphore));
+        }
+        else
+        {
+          break;
+        }
+        
+      }
+
+      return 1;
+  }
+  else
+  {
+    return 0;
+  }
   
 }
 
@@ -551,9 +625,13 @@ switch_rooms(struct wizard *w, struct room *oldroom, struct room* newroom)
       print_cube(w->cube);
       exit(1);
     }
-
-  /* Fill in */
-
+  /*
+  * TODO:
+  *   Figure out what needs to be filled
+  *   in here.
+  */
+    
+  sem_post(&(oldroom->frozenSmeaphore));
   /* Updates room wizards and determines opponent */
   if (newroom->wizards[0] == NULL)
     {
@@ -573,6 +651,7 @@ switch_rooms(struct wizard *w, struct room *oldroom, struct room* newroom)
       exit(1);
     }
   
+  sem_wait(&(newroom->frozenSmeaphore));
   /* Sets self's location to current room */
   w->x = newroom->x;
   w->y = newroom->y;
@@ -593,7 +672,11 @@ fight_wizard(struct wizard *self, struct wizard *other, struct room *room)
 	     self->team, self->id, room->x, room->y,
 	     other->team, other->id);
 
-      /* Fill in */
+      /*
+      * set oppents status and waits on sem
+      */
+      other->status = 1;
+      sem_wait(&(other->frozenSmeaphore));
 
 
     }
@@ -606,7 +689,11 @@ fight_wizard(struct wizard *self, struct wizard *other, struct room *room)
 	     self->team, self->id, room->x, room->y,
 	     other->team, other->id);
 
-      /* Fill in */
+      /*
+      * Sets attackers status and waits on sem
+      */
+      self->status = 1;
+      sem_wait(&(self->frozenSmeaphore));
 
       return 1;
     }
@@ -628,8 +715,8 @@ free_wizard(struct wizard *self, struct wizard *other, struct room* room)
 	     self->team, self->id, room->x, room->y,
 	     other->team, other->id);
 
-      /* Fill in */
-      
+      other->status = 0;
+      sem_post(&(other->frozenSmeaphore));
     }
 
   /* The spell failed */
