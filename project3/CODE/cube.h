@@ -2,15 +2,11 @@
 #define _CUBE_H
 
 #define SOLUTION
-#include <semaphore.h>
-
-
 
 struct cube;
-int numOfWizs;
-sem_t wizardLockout;
-sem_t interfaceLockout;
 
+int total; 
+sem_t wiz, user;
 
 
 struct wizard {
@@ -18,20 +14,17 @@ struct wizard {
   int y;
   int id;
   char team;
-  int status; /* 0: alive, 1: frozen */
-  struct cube *cube; 
-  sem_t frozenSmeaphore;
-  
+  int status;
+  struct cube *cube;
+  sem_t frz;	
 };
   
 struct room {
   int x;
   int y;
   struct wizard *wizards[2];
-  int status;
-  sem_t frozenSmeaphore;
-
-  /* Fill in as required */
+  int status;	
+  sem_t rm;		
 };
 
 struct cube {
@@ -41,24 +34,20 @@ struct cube {
   struct wizard **teamA_wizards;
   struct wizard **teamB_wizards;
   int game_status;
-
-  /* Pointer to a two-dimensional array of rooms */
   struct room ***rooms;
-
-  /* Fill in as required */
 };
 
-extern void print_wizard(struct wizard *);
-extern void kill_wizards(pthread_t *wizArr);
+extern void print_wizard(struct wizard *);	
+extern void kill_wizards(pthread_t *);
 extern void print_cube(struct cube *);
-extern int check_winner(struct cube *);
+extern bool check_winner(struct cube *);
 
 extern void dostuff();
 extern struct room * choose_room(struct wizard*);
-extern int try_room(struct wizard *, struct room *, struct room* );
-extern void switch_rooms(struct wizard *, struct room *, struct room* );
+extern int try_room(struct wizard *, struct room *, struct room* );	
+extern void switch_rooms(struct wizard *, struct room *, struct room* );	
 extern struct wizard * find_opponent(struct wizard*, struct room *);
 extern int fight_wizard(struct wizard *, struct wizard *, struct room *);
-extern int free_wizard(struct wizard *, struct wizard *, struct room *);
+extern int free_wizard(struct wizard *, struct wizard *, struct room *);	
 
 #endif
