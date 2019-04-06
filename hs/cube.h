@@ -8,7 +8,7 @@
 struct cube;
 
 /*
-* thread and semaphore  declarations
+*	declare custom semaphores/locks
 */
 
 sem_t singleStep;

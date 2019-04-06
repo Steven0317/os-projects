@@ -255,7 +255,10 @@ interface(void *cube_ref)
 			{
 				cube->game_status = 0;
 
-			  	//start the game by creating all the threads and init semaphores
+			  	/*
+				  *	Start game and initalize semaphores
+				  * /locks
+				*/
 			  
 				
 				pthread_mutex_init(&mutexRoom, NULL);
@@ -265,12 +268,12 @@ interface(void *cube_ref)
 				sem_post(&interfaceLocker);
 
 
-				//create the threads team A wizards
+				//create the threads for team A & B
 				for (j = 0; j < cube->teamA_size; j++) {
 					pthread_create(&aTeam[j], NULL, wizard_func, (void*)cube->teamA_wizards[j]);
 				}
 
-				//create the threads team B wizards
+				
 				for (j = 0; j < cube->teamB_size; j++) {
 					pthread_create(&bTeam[j], NULL, wizard_func, (void*)cube->teamB_wizards[j]);
 				}
@@ -281,7 +284,9 @@ interface(void *cube_ref)
 			if (cube->game_status == 0)
 			{
 				/*
-				*	wait for user command after each run
+				*	s command signals single step mode
+				*	locking out others while waiting for 
+				*	user input	
 				*/
 				sem_post(&singleStep);
 			}
@@ -301,7 +306,8 @@ interface(void *cube_ref)
 			if (cube->game_status == 0)
 			{
 				/*
-				*	run until game completion
+				*	c command runs the game uninterrupted	
+				*	until it completes
 				*/
 				do {
 					sem_post(&singleStep);
@@ -528,7 +534,7 @@ main(int argc, char** argv)
 	}
 
 
-	/* Goes in the interface loop */
+	/* interface loop */
 	res = interface(cube);
 
 	/*
@@ -706,7 +712,11 @@ fight_wizard(struct wizard *self, struct wizard *other, struct room *room)
 	return 0;
 }
 
-//increments count of appropriate team
+/*
+*	increments cunt of frozen wizards this needs to be atomic
+*	since these values are read by a different thread in the game 
+*	check win condition 
+*/
 void 
 incrementFCount(const struct wizard * wiz)
 {
@@ -726,7 +736,10 @@ incrementFCount(const struct wizard * wiz)
 
 }
 
-//decrements count of appropriate team
+/*
+*	decrements the count value, same principles
+*	from above apply here
+*/
 void 
 decrementFCount(const struct wizard * wiz)
 {

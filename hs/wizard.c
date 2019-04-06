@@ -116,7 +116,10 @@ wizard_func(void *wizard_descr)
 			}
 		}
 
-		
+		/*
+		*	mutex lock here will ensure that a wiz
+		*	wont leave te roomin middle of a fight
+		*/
 		pthread_mutex_unlock(&mutexRoom);
 
 		/* Thinks about what to do next */
