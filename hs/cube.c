@@ -260,7 +260,6 @@ interface(void *cube_ref)
 				  * /locks
 				*/
 			  
-				
 				pthread_mutex_init(&mutexRoom, NULL);
 				sem_init(&singleStep, 0, 0);
 				sem_init(&ATeam, 0, 1);
