@@ -88,11 +88,11 @@ print_cube(struct cube *cube)
 				{
 					if (cube->rooms[j][i]->wizards[k]->status)
 					{
-						printf("%c", cube->rooms[j][i]->wizards[k]->team);
+						printf("%c", tolower(cube->rooms[j][i]->wizards[k]->team));
 					}
 					else
 					{
-						printf("%c", cube->rooms[j][i]->wizards[k]->team);
+						printf("%c", toupper(cube->rooms[j][i]->wizards[k]->team));
 					}
 				}
 				else
@@ -561,7 +561,7 @@ void
 incrementFCount(const struct wizard * wiz)
 {
 
-	if (wiz->team == 'a')
+	if (tolower(wiz->team) == 'a')
 	{
 		sem_wait(&ATeam);
 		aTeamFrozen++;
@@ -584,7 +584,7 @@ void
 decrementFCount(const struct wizard * wiz)
 {
 
-	if (wiz->team == 'a')
+	if (tolower(wiz->team) == 'a')
 	{
 		sem_wait(&ATeam);
 		aTeamFrozen--;
@@ -732,7 +732,7 @@ fight_wizard(struct wizard *self, struct wizard *other, struct room *room)
 
 		
 		other->status = 1;
-		other->team = other->team;
+		other->team = tolower(other->team);
 		incrementFCount(other);
 	}
 
@@ -745,7 +745,7 @@ fight_wizard(struct wizard *self, struct wizard *other, struct room *room)
 
 
 		self->status = 1;
-		self->team = self->team;
+		self->team = tolower(self->team);
 		incrementFCount(self);
 
 	}
