@@ -28,25 +28,19 @@ wizard_func(void *wizard_descr)
 	newroom = choose_room(self);
 
 	/* Infinite loop */
-	while (TRUE)
+	while (1)
 	{
 		sem_wait(&singleStep);
 
-		/*
-		*	kills the wizard if game is over
-		*/
+		//kills the wizard
 		if (cube->game_status == 1) {
 			pthread_exit(NULL);
 		}
 
-		/*
-		*	checks if wizard is frozen,
-		*/
+		//checks if wizard is frozen,
 		if (self->status == 1)
 		{
-			/*
-			*	if frozen other wiz moves
-			*/
+			// if this wizard is frozen, allow another wizard to take the move
 			sem_post(&singleStep);
 			dostuff();
 			continue;
@@ -56,12 +50,10 @@ wizard_func(void *wizard_descr)
 		printf("Wizard %c%d in room (%d,%d) wants to go to room (%d,%d)\n",
 			self->team, self->id, oldroom->x, oldroom->y, newroom->x, newroom->y);
 
-		/*
-		*	lock out to keep multiple wizards from entering room
-		*/
+		//locks until if find a room to be in so multi wizards are not getting into the same room
 		pthread_mutex_lock(&mutexRoom);
 
-		if (try_room(self, oldroom, newroom))
+		if (try_room(self, oldroom, newroom)) // room is full
 		{
 			/* Waits a random amount of time */
 			dostuff();
@@ -76,11 +68,8 @@ wizard_func(void *wizard_descr)
 			/* Goes back to the initial state and try again */
 			continue;
 		}
-		else
-		{
-			break;
-		}
-		
+
+		// room is not full
 
 		printf("Wizard %c%d in room (%d,%d) moves to room (%d,%d)\n",
 			self->team, self->id,
@@ -95,16 +84,12 @@ wizard_func(void *wizard_descr)
 		if (other == NULL)
 		{
 			printf("Wizard %c%d in room (%d,%d) finds nobody around\n",
-			self->team, self->id, newroom->x, newroom->y);
-
-			/*
-			*	What needs to be filled in here?
-			*/
+				self->team, self->id, newroom->x, newroom->y);
 		}
 		else
 		{
 			/* Other is from opposite team */
-			if (other->team != self->team))
+			if (tolower(other->team) != tolower(self->team))
 			{
 				/* Checks if the opponent is active */
 				if (other->status == 0)
