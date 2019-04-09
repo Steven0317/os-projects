@@ -113,8 +113,7 @@ print_cube(struct cube *cube)
 	return;
 }
 
-struct 
-wizard *init_wizard(struct cube* cube, char team, int id)
+struct wizard *init_wizard(struct cube* cube, char team, int id)
 {
 	int x, newx;
 	int y, newy;
@@ -241,7 +240,7 @@ interface(void *cube_ref)
 		{
 			if (cube->game_status == 1)
 			{
-				fprintf(stderr, "Game is over. Cannot be started again\n");
+				fprintf(stderr, "Game cannot be started again\n");
 				sem_post(&interfaceLocker);
 
 			}
@@ -291,12 +290,12 @@ interface(void *cube_ref)
 			}
 			else if (cube->game_status == 1)
 			{
-				fprintf(stderr, "Game is over. Cannot be started again\n");
+				fprintf(stderr, "Game cannot be started again\n");
 				sem_post(&interfaceLocker);
 			}
 			else
 			{
-				fprintf(stderr, "Game has not started. Start the game.\n");
+				fprintf(stderr, "Game not started. Enter Start.\n");
 				sem_post(&interfaceLocker);
 			}
 		}
@@ -318,12 +317,12 @@ interface(void *cube_ref)
 			}
 			else if (cube->game_status == 1)
 			{
-				fprintf(stderr, "Game is over. Cannot be started again\n");
+				fprintf(stderr, "Game cannot be started again\n");
 				sem_post(&interfaceLocker);
 			}
 			else
 			{
-				fprintf(stderr, "Game has not started. Start the game.\n");
+				fprintf(stderr, "Game not started. Enter Start.\n");
 				sem_post(&interfaceLocker);
 			}
 		}
@@ -388,7 +387,7 @@ main(int argc, char** argv)
 				exit(-1);
 			}
 			cube_size = atoi(argv[i]);
-			if (cube_size <= 0)
+			if (cube_size == 0)
 			{
 				fprintf(stderr, "Illegal cube size\n");
 				exit(-1);
@@ -404,7 +403,7 @@ main(int argc, char** argv)
 				exit(-1);
 			}
 			teamA_size = atoi(argv[i]);
-			if (teamA_size <= 0)
+			if (teamA_size == 0)
 			{
 				fprintf(stderr, "Illegal team size\n");
 				exit(-1);
@@ -422,7 +421,7 @@ main(int argc, char** argv)
 				exit(-1);
 			}
 			teamB_size = atoi(argv[i]);
-			if (teamB_size <= 0)
+			if (teamB_size == 0)
 			{
 				fprintf(stderr, "Illegal team size\n");
 				exit(-1);
@@ -533,7 +532,7 @@ main(int argc, char** argv)
 	}
 
 
-	/* interface loop */
+	/* Goes in the interface loop */
 	res = interface(cube);
 
 	/*
@@ -553,6 +552,53 @@ main(int argc, char** argv)
 	pthread_mutex_destroy(&mutexRoom);
 	exit(res);
 }
+/*
+*	increments cunt of frozen wizards this needs to be atomic
+*	since these values are read by a different thread in the game 
+*	check win condition 
+*/
+void 
+incrementFCount(const struct wizard * wiz)
+{
+
+	if (tolower(wiz->team) == 'a')
+	{
+		sem_wait(&ATeam);
+		aTeamFrozen++;
+		sem_post(&ATeam);
+	}
+	else
+	{
+		sem_wait(&BTeam);
+		bTeamFrozen++;
+		sem_post(&BTeam);
+	}
+
+}
+
+/*
+*	decrements the count value, same principles
+*	from above apply here
+*/
+void 
+decrementFCount(const struct wizard * wiz)
+{
+
+	if (tolower(wiz->team) == 'a')
+	{
+		sem_wait(&ATeam);
+		aTeamFrozen--;
+		sem_post(&ATeam);
+	}
+	else
+	{
+		sem_wait(&BTeam);
+		bTeamFrozen--;
+		sem_post(&BTeam);
+	}
+
+}
+
 
 void dostuff()
 {
@@ -604,8 +650,7 @@ try_room(struct wizard *w, struct room *oldroom, struct room* newroom)
 	return 1;
 }
 
-struct 
-wizard *
+struct wizard *
 	find_opponent(struct wizard* self, struct room *room)
 {
 	struct wizard *other = NULL;
@@ -709,53 +754,6 @@ fight_wizard(struct wizard *self, struct wizard *other, struct room *room)
 
 
 	return 0;
-}
-
-/*
-*	increments cunt of frozen wizards this needs to be atomic
-*	since these values are read by a different thread in the game 
-*	check win condition 
-*/
-void 
-incrementFCount(const struct wizard * wiz)
-{
-
-	if (tolower(wiz->team) == 'a')
-	{
-		sem_wait(&ATeam);
-		aTeamFrozen++;
-		sem_post(&ATeam);
-	}
-	else
-	{
-		sem_wait(&BTeam);
-		bTeamFrozen++;
-		sem_post(&BTeam);
-	}
-
-}
-
-/*
-*	decrements the count value, same principles
-*	from above apply here
-*/
-void 
-decrementFCount(const struct wizard * wiz)
-{
-
-	if (tolower(wiz->team) == 'a')
-	{
-		sem_wait(&ATeam);
-		aTeamFrozen--;
-		sem_post(&ATeam);
-	}
-	else
-	{
-		sem_wait(&BTeam);
-		bTeamFrozen--;
-		sem_post(&BTeam);
-	}
-
 }
 
 int
