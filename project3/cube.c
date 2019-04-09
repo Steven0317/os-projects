@@ -560,20 +560,16 @@ main(int argc, char** argv)
 void 
 incrementFCount(const struct wizard * wiz)
 {
-
-	if (tolower(wiz->team) == 'a')
-	{
+	if(tolower(wiz->team) == 'a'){
 		sem_wait(&ATeam);
 		aTeamFrozen++;
 		sem_post(&ATeam);
 	}
-	else
-	{
+	else{
 		sem_wait(&BTeam);
 		bTeamFrozen++;
 		sem_post(&BTeam);
 	}
-
 }
 
 /*
@@ -583,20 +579,16 @@ incrementFCount(const struct wizard * wiz)
 void 
 decrementFCount(const struct wizard * wiz)
 {
-
-	if (tolower(wiz->team) == 'a')
-	{
+	if(tolower(wiz->team) == 'a'){
 		sem_wait(&ATeam);
 		aTeamFrozen--;
 		sem_post(&ATeam);
 	}
-	else
-	{
+	else{
 		sem_wait(&BTeam);
 		bTeamFrozen--;
 		sem_post(&BTeam);
 	}
-
 }
 
 
