@@ -12,13 +12,13 @@ int main( int argc, char ** argv){
     stat(argv[1], &stats);
 
     //File Size//
-    printf("Size: %d bytes\n", stats.st_size);
+    printf("Size: %ld bytes\n", stats.st_size);
     
     //Block Size Allocated//
-    printf("Blocks: %d blocks\n", stats.st_blocks);
+    printf("Blocks: %ld blocks\n", stats.st_blocks);
     
     //Reference Count//
-    printf("Reference (Link) Count: %d\n", stats.st_nlink);
+    printf("Reference (Link) Count: %ld\n", stats.st_nlink);
     
     //File Permissions//
     printf("File Permission (");
@@ -79,7 +79,7 @@ int main( int argc, char ** argv){
     printf(")\n");
    
     //file inode//
-    printf("File Inode %d", stats.st_ino);
+    printf("File Inode %ld\n", stats.st_ino);
 
     return 0;
 }

@@ -4,6 +4,8 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <pwd.h>
+
 
 //linux max path length
 #define path_length 256
@@ -20,10 +22,11 @@ void listFiles(char* dir){
         }
     }else {
         printf("failed opening directory");
-        return 1;
+        exit(1);
     }
 }
 
+//print out all permissions for a given file stats struct
 void permissions(struct stat stats){
 
     printf("File Permission (");
@@ -83,6 +86,8 @@ void permissions(struct stat stats){
     }
     printf(")\n");
 }
+
+//print out detailed information for the given directory
 void callStat(char* dir){
     DIR* fdesc = opendir(dir);
     
@@ -92,37 +97,33 @@ void callStat(char* dir){
         struct passwd* owner;
         struct passwd* group;
 
-        while(current = readdir(fdesc) != NULL){
+        while((current = readdir(fdesc)) != NULL){
             stat(current->d_name, &stats);
             owner = getpwuid(stats.st_uid);
             group = getpwuid(stats.st_gid);
 
-            printf("%s %s %s %d", current->d_name, owner->pw_name, group->pw_name, stats.st_size);
+            printf("%s %s %s %ld", current->d_name, owner->pw_name, group->pw_name, stats.st_size);
             permissions(stats);
         }
 
     }else{
         printf("failed opening file");
-        return 1;
+        exit(1);
     }
 }
 
 
 int main( int argc, char** argv){
 
-    if(argc < 2){
-        printf("Argument error\n");
-        return 1;
-    }
-
     char* dir;
-
+    
     if(argc == 2){
         //check for detailed view flag
-        if(strcmp(argv[1], "-l")){
+        if(!strcmp(argv[1], "-l")){
             //allocate memory for directory string
             dir = (char *) malloc(sizeof(char*) * path_length);
             getcwd(dir,path_length);
+            
             if(dir == NULL){
                 printf("directory error");
                 return 1;
@@ -133,6 +134,7 @@ int main( int argc, char** argv){
             // specific dir
             dir = (char *) malloc(sizeof(char*) * path_length);
             strcpy(dir, argv[1]);
+
             listFiles(dir);
         }
     }else if(argc == 3){
@@ -140,7 +142,8 @@ int main( int argc, char** argv){
         // directory 
         dir = (char *) malloc(sizeof(char*) * path_length);
         //account for '-l' being out of place
-        if(strcmp(argv[1],"-l")){
+        if(!strcmp(argv[1],"-l")){
+            
             strcpy(dir,argv[2]);
             callStat(dir);
         }else{
@@ -152,6 +155,7 @@ int main( int argc, char** argv){
         // no parameters are passed
         dir = (char *) malloc(sizeof(char*) * path_length);
         getcwd(dir, path_length);
+        
         if(dir == NULL){
             printf("directory error");
             return 1;
